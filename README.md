@@ -62,11 +62,11 @@ Abaixo está uma lista dos arquivos por diretório.
 Após a publicação da lib pela esteira, basta no projeto destino realizar o install: 
 
 
-npm install --save @company/base-robot-mobile-automation-test
+npm install --save @company/base-robot-framework-test
 
 
 # Documentação padrão e esteira
 
-Veja a documentação completa e atualizada do archetype de library aqui: https://backstage.k8s-corp.company.net.br/docs/default/Component/cac-docs/hefesto/archetypes/nodejs/library/
+Veja a documentação completa e atualizada do archetype de library aqui: https://backstage.k8s-corp.company.net.br/docs/default/Component/cac-docs/lucas/archetypes/nodejs/library/
 
 (Necessário estar conectado na VPN)

@@ -1,9 +1,9 @@
 {
-  "name": "@company/base-robot-mobile-automation-test",
+  "name": "@company/base-robot-framework-test",
   "version": "1.7.11",
   "description": "Projeto base para construção de testes automatizados mobile com robot",
   "main": "lib/index.js",
-  "author": "hefesto@company.com.br",
+  "author": "lucas@company.com.br",
   "engines": {
     "node": "18.x",
     "npm": ">=6.0.0"

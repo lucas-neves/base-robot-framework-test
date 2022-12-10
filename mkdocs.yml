@@ -1,5 +1,5 @@
-site_name: base-robot-mobile-automation-test
-repo_url: https://dev.azure.com/DEVOPS-COMPANY/tribe-loan/_git/base-robot-mobile-automation-test
+site_name: base-robot-framework-test
+repo_url: https://dev.azure.com/DEVOPS-COMPANY/tribe-loan/_git/base-robot-framework-test
 repo_name: Repository
 site_description: Projeto base para construção de testes automatizados mobile com robot
 theme: readthedocs

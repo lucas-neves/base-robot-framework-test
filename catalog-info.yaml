@@ -6,7 +6,7 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: "base-robot-mobile-automation-test"
+  name: "base-robot-framework-test"
   description: "Projeto base para construção de testes automatizados mobile com robot"
   tags:
     - library
