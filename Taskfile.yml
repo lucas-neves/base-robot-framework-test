@@ -1,0 +1,369 @@
+
+
+##########
+# 			                           _ _
+# 			 _ __   __ _  ___     __ _| | |_ ___ _ __ __ _ _ __
+# 			| '_ \ / _` |/ _ \   / _` | | __/ _ \ '__/ _` | '__|
+# 			| | | | (_| | (_) | | (_| | | ||  __/ | | (_| | |
+# 			|_| |_|\__,_|\___/   \__,_|_|\__\___|_|  \__,_|_|
+#
+# 	  	                       _ ._  _ , _ ._
+# 	  	                     (_ ' ( `  )_  .__)
+# 	  	                   ( (  (    )   `)  ) _)
+# 	  	                  (__ (_   (_ . _) _) ,__)
+# 	  	                      `~~`\ ' . /`~~`
+# 	  	                      ,::: ;   ; :::,
+# 	  	                     ':::::::::::::::'
+# 	 _____________________________/_____\_______________________________
+# 	| 		                      										                    |
+# 	| 		   QUALQUER ALTERAÇÃO AQUI PODERÁ IMPACTAR A ESTEIRA          |
+# 	|    SÓ ALTERE SE FOR RECOMENDADO OU SE SOUBER O QUE ESTÁ FAZENDO   |
+# 	|___________________________________________________________________|
+#
+#
+# 	Não altere esse arquivo, exceto se recomendado ou se souber exatamente o que estiver fazendo
+# 	Este arquivo é utilizado como PONTE de comunicação entre esteira e o repositório
+# 	Os comandos ficam aqui para trazer flexibilidade e autonomia ao projeto e seus contribuidores
+# 	Toda e qualquer alteração neste arquivo PODE impactar o funcionando da esteira
+#
+##########
+
+version: "3"
+
+vars:
+  TEMPORARY_DIRECTORY:
+    sh: "if [ {{OS}} == 'windows' ]; then echo '/temp'; else echo '/tmp'; fi"  
+  DOCKER_USER:
+    sh: "if [ {{OS}} == 'windows' ]; then echo '1000'; else echo $(id -u); fi"
+  DOCKER_GROUP:
+    sh: "if [ {{OS}} == 'windows' ]; then echo '1000'; else echo $(id -g); fi"
+  DOCKER_WORKDIR: /app
+  DOCKER_NPM_CACHE_FOLDER: /tmp/.npm
+  DOCKER_IMAGE_BUILDER: builder:latest
+  DOCKER_IMAGE_RUNTIME: runtime:latest
+  DOCKER_REGISTRY: "company.azurecr.io"
+  GITLOG_COUNT: "{{.GITLOG_COUNT | default 10}}"
+
+dotenv: ['.azuredevops/sonar.env' ]
+
+tasks:
+  default:
+    cmds:
+      - task --help
+      - task --list
+
+
+  #
+  #                                                  \\\///
+  #                                                 / _  _ \
+  #                                               (| (.)(.) |)
+  #    ______________________________________ .-.OOOo--()--oOOO.-.____________________________________
+  #   |                                                                                               |
+  #   |      Toda alteração neste arquivo deve ser feita sabendo que pode afetar o pipeline           |
+  #   |     Caso algo foi alterado e parou de funcionar, é de extrema importância um rollback         |
+  #   |                                                                                               |
+  #   '-------------------------------------------.oooO-----------------------------------------------'
+  #                                               (   )   Oooo.
+  #                                                \ (    (   )
+  #                                                 \_)    ) /
+  #                                                       (_/
+  #
+
+
+  ####################################
+  #           NÃO  ALTERAR           #
+  #    Comando usado pela esteira    #
+  ####################################
+
+  get:version:
+    desc: "Obtem a versão atual definida para a aplicação no package.json"
+    cmds:
+      - >
+        docker run \
+          --user="{{.DOCKER_USER}}:{{.DOCKER_GROUP}}" \
+          --network host \
+          --workdir "{{.DOCKER_WORKDIR}}" \
+          -v "$(pwd)"/:"{{.DOCKER_WORKDIR}}" \
+          {{.DOCKER_IMAGE_BUILDER}} \
+          node -p -e "require('./package.json').version"
+
+  review:lint:
+    desc: "Executa as rotinas de lint da aplicação"
+    deps: [build:utils-image]
+    cmds:
+      - >
+        docker run \
+          --user="{{.DOCKER_USER}}:{{.DOCKER_GROUP}}" \
+          --network host \
+          --workdir "{{.DOCKER_WORKDIR}}" \
+          -v "$(pwd)"/:"{{.DOCKER_WORKDIR}}" \
+          -v /tmp:/.cache \
+          {{.DOCKER_IMAGE_BUILDER}} sh -c " \
+          npm run lint"
+
+  review:security:
+    desc: "Executa as rotinas de segurança da aplicação"
+    deps: [build:utils-image, install:dependencies]
+    cmds:
+      - >
+        docker run \
+          --user="{{.DOCKER_USER}}:{{.DOCKER_GROUP}}" \
+          --network host \
+          --workdir "{{.DOCKER_WORKDIR}}" \
+          -e npm_config_cache="/tmp/.npm" \
+          -v "$(pwd)"/:"{{.DOCKER_WORKDIR}}" \
+          {{.DOCKER_IMAGE_BUILDER}} sh -c " \
+          npm audit"
+  
+  review:test:
+    desc: "Executa as rotinas de teste da aplicação"
+    deps: [build:utils-image, install:dependencies]
+    cmds:
+      - >
+        docker run \
+          --user="{{.DOCKER_USER}}:{{.DOCKER_GROUP}}" \
+          --network host \
+          --workdir "{{.DOCKER_WORKDIR}}" \
+          -v "$(pwd)"/:"{{.DOCKER_WORKDIR}}" \
+          -v /tmp:/.cache \
+          -e npm_config_cache="/tmp/.npm" \
+          {{.DOCKER_IMAGE_BUILDER}} sh -c " \
+          npm run test"
+
+  install:dependencies:
+    deps: [build:utils-image]
+    cmds:
+      - >
+        docker run \
+            --user="{{.DOCKER_USER}}:{{.DOCKER_GROUP}}" \
+            --network host \
+            --workdir "{{.DOCKER_WORKDIR}}" \
+            -v "$(pwd)"/:"{{.DOCKER_WORKDIR}}" \
+            -e npm_config_cache="{{.DOCKER_NPM_CACHE_FOLDER}}" \
+            builder:latest \
+            sh -c "if [ -f "package-lock.json" ]; then echo 'use npm ci' && npm ci; elif [ -f "yarn.lock" ]; then echo 'use yarn --frozen-lockfile' && yarn --frozen-lockfile; else echo 'fresh npm install' && npm install --verbose; fi"           
+
+  review:sonar:
+    desc: "Executa as rotinas de escaneamento do sonar"
+    deps: [build:utils-image]
+    cmds:
+      - >
+        
+        if [ -z "$SYSTEM_PULLREQUEST_PULLREQUESTID" ]; then
+          extra_args=-Dsonar.branch.name=${BRANCH_NAME};
+        else
+          extra_args='-Dsonar.pullrequest.key="${SYSTEM_PULLREQUEST_PULLREQUESTID}" -Dsonar.pullrequest.branch="${SYSTEM_PR_SOURCE_BRANCH}" -Dsonar.pullrequest.base="${SYSTEM_PR_TARGET_BRANCH}"'
+        fi
+      
+        echo ${extra_args}
+
+        docker run \
+          --user="{{.DOCKER_USER}}:{{.DOCKER_GROUP}}" \
+          --rm \
+          --network host \
+          --workdir "{{.DOCKER_WORKDIR}}" \
+          -v "$(pwd)"/:"{{.DOCKER_WORKDIR}}" \
+          --env-file ".azuredevops/sonar.env" \
+          -v $(pwd):/usr/src \
+          sonarsource/sonar-scanner-cli \
+            -Dproject.settings=.azuredevops/sonar-project.properties \
+            $extra_args
+
+  build:robot:
+    desc: "Roda o comando de build da aplicação (Usado pela esteira)"
+    deps: [build:utils-image, install:dependencies]
+    cmds:
+      - >
+        docker run \
+          --user="{{.DOCKER_USER}}:{{.DOCKER_GROUP}}" \
+          --network host \
+          --workdir "{{.DOCKER_WORKDIR}}" \
+          -v "$(pwd)"/:"{{.DOCKER_WORKDIR}}" \
+          -v /tmp:/.cache \
+          -e npm_config_cache="{{.DOCKER_NPM_CACHE_FOLDER}}" \
+          {{.DOCKER_IMAGE_BUILDER}} sh -c " \
+            npm run robot"             
+            
+  build:application:
+    desc: "Roda o comando de build da aplicação (Usado pela esteira)"
+    deps: [build:utils-image, install:dependencies]
+    cmds:
+      - >
+        docker run \
+          --user="{{.DOCKER_USER}}:{{.DOCKER_GROUP}}" \
+          --network host \
+          --workdir "{{.DOCKER_WORKDIR}}" \
+          -v "$(pwd)"/:"{{.DOCKER_WORKDIR}}" \
+          -v /tmp:/.cache \
+          -e npm_config_cache="{{.DOCKER_NPM_CACHE_FOLDER}}" \
+          {{.DOCKER_IMAGE_BUILDER}} sh -c " \
+            npm run build"       
+
+  publish:artifact:
+    desc: "Roda o comando de build da aplicação (Usado pela esteira)"
+    deps: [build:utils-image]
+    cmds:
+      - >
+        docker run \
+          --user="{{.DOCKER_USER}}:{{.DOCKER_GROUP}}" \
+          --network host \
+          --workdir "{{.DOCKER_WORKDIR}}" \
+          -v "$(pwd)"/:"{{.DOCKER_WORKDIR}}" \
+          -v /tmp:/.cache \
+          -e npm_config_cache="{{.DOCKER_NPM_CACHE_FOLDER}}" \
+          {{.DOCKER_IMAGE_BUILDER}} sh -c " \
+            cp .npmrc package.json dist && npm publish dist/"
+
+  build:utils-image:
+    desc: "Cria uma imagem utilizada para utilizações gerais"
+    cmds:
+      - docker build --network host -t {{ .DOCKER_IMAGE_BUILDER }} -f .azuredevops/builder.Dockerfile .
+
+  get:application-version:
+    desc: "Retorna do package.json  a versão da aplicação (Usado pela esteira)" 
+    cmds:
+      - >
+        docker run \
+          --user="{{.DOCKER_USER}}:{{.DOCKER_GROUP}}" \
+          --network host \
+          --workdir "{{.DOCKER_WORKDIR}}" \
+          -v "$(pwd)"/:"{{.DOCKER_WORKDIR}}" \
+          -v /tmp:/.cache \
+          -e npm_config_cache="{{.DOCKER_NPM_CACHE_FOLDER}}" \
+          {{.DOCKER_IMAGE_BUILDER}} sh -c " \
+            node -p -e \"require('./package.json').version\""
+
+  get:application-name:
+    desc: "Retorna do package.json  a versão da aplicação (Usado pela esteira)" 
+    cmds:
+      - >
+        docker run \
+          --user="{{.DOCKER_USER}}:{{.DOCKER_GROUP}}" \
+          --network host \
+          --workdir "{{.DOCKER_WORKDIR}}" \
+          -v "$(pwd)"/:"{{.DOCKER_WORKDIR}}" \
+          -v /tmp:/.cache \
+          -e npm_config_cache="{{.DOCKER_NPM_CACHE_FOLDER}}" \
+          {{.DOCKER_IMAGE_BUILDER}} sh -c " \
+            node -p -e \"require('./package.json').name\""            
+
+  check:version:
+      cmds:
+        - >
+          docker run --rm --log-driver none --entrypoint jq -v "$(pwd)"/:"{{.DOCKER_WORKDIR}}" --workdir "{{.DOCKER_WORKDIR}}" linuxserver/yq -r '.value[0].versions[] | select(.version == "0.0.1")' result.json
+  
+          # docker run --rm --log-driver none --entrypoint jq -v "$(pwd)"/:"{{.DOCKER_WORKDIR}}" --workdir "{{.DOCKER_WORKDIR}}" linuxserver/yq -r ".value[0].versions[] | select( .version | test(\"0.0.1\") ) | .version" result.json
+        
+
+  get:publish-test-result-format:
+    desc: ""
+    cmds:
+      - echo "JUnit"
+
+  get:publish-test-result-files:
+    desc: ""
+    cmds:
+      - echo ".reports/test-report.xml"
+
+  get:publish-test-html-report:
+    desc: ""
+    cmds:
+      - echo ".reports/test-report.html"
+
+  get:publish-test-coverage-tool:
+    desc: ""
+    cmds:
+      - echo "Cobertura"
+
+  get:publish-test-coverage-summary-file:
+    desc: ""
+    cmds:
+      - echo ".reports/cobertura-coverage.xml"
+
+  get:publish-test-coverage-path-to-sources:
+    desc: ""
+    cmds:
+      - echo "src"
+
+  get:tribe-name:
+    desc: "Retorna do catalog-info o nome da tribo mantenedora (Usado pela esteira)"
+    cmds:
+      - docker run --rm --log-driver none --entrypoint yq -v $(pwd):/tmp/ linuxserver/yq -r '.metadata.annotations."company.io/jira-tribe-label"' /tmp/catalog-info.yaml
+
+  get:tribe-id:
+    desc: "Retorna do catalog-info o id da tribo mantenedora (Usado pela esteira)"
+    cmds:
+      - docker run --rm --log-driver none --entrypoint yq -v $(pwd):/tmp/ linuxserver/yq -r '.metadata.annotations."company.io/jira-tribe-id"' /tmp/catalog-info.yaml
+
+  get:squad-name:
+    desc: "Retorna do catalog-info o nome da squad mantenedora (Usado pela esteira)"
+    cmds:
+      - docker run --rm --log-driver none --entrypoint yq -v $(pwd):/tmp/ linuxserver/yq -r '.metadata.annotations."company.io/jira-squad-label"' /tmp/catalog-info.yaml
+
+  get:squad-id:
+    desc: "Retorna do catalog-info o id da squad mantenedora (Usado pela esteira)"
+    cmds:
+      - docker run --rm --log-driver none --entrypoint yq -v $(pwd):/tmp/ linuxserver/yq -r '.metadata.annotations."company.io/jira-squad-id"' /tmp/catalog-info.yaml
+
+  get:sonar-project-key:
+    desc: "Retorna do catalog-info o id do projeto no sonarqube"
+    cmds:
+      - docker run --rm --log-driver none --entrypoint yq -v $(pwd):/tmp/ linuxserver/yq -r '.metadata.annotations."sonarqube.org/project-key"' /tmp/catalog-info.yaml
+
+  get:application-changelog:
+    desc: "Retorna o changelog da aplicação para a versão especifcia (desde que preenchido conforme keepachangelog.org) (Usado pela esteira)"
+    cmds:
+      - >
+        docker run \
+            --user="{{.DOCKER_USER}}:{{.DOCKER_GROUP}}" \
+            --network host \
+            --workdir "{{.DOCKER_WORKDIR}}" \
+            -v "$(pwd)"/:"{{.DOCKER_WORKDIR}}" \
+            -e npm_config_cache="{{.DOCKER_NPM_CACHE_FOLDER}}" \
+            node:12-alpine \
+            sh -c "awk \"/^## \[$(task get:application-version)\] /{p=1;print;next} p&&/^## \[[0-9]+\./{p=0};p\" docs/changelog.md"
+
+  get:application-git-log:
+    desc: "Retorna o git log da aplicação com os últimos commits definidos abaixo"
+    cmds:
+      - >
+        docker run \
+            --user="{{.DOCKER_USER}}:{{.DOCKER_GROUP}}" \
+            --network host \
+            --workdir "{{.DOCKER_WORKDIR}}" \
+            -v "$(pwd)"/:"{{.DOCKER_WORKDIR}}" \
+            -e npm_config_cache="{{.DOCKER_NPM_CACHE_FOLDER}}" \
+            alpine/git \
+            log --oneline -n {{.GITLOG_COUNT}} --format='* %h - %s (%ad) por <%ae>'
+
+  # Realiza o docker login no registry da company
+  docker:login:
+    desc: "Realiza Login no registry da company"
+    cmds:
+      - az account show --output none --subscription shared-PROD || az login --output none
+      - echo $(az acr login -n {{.DOCKER_REGISTRY}} --expose-token --query accessToken --output tsv) | docker login {{.DOCKER_REGISTRY}} -u 00000000-0000-0000-0000-000000000000 --password-stdin
+
+  docker:login-windows:
+    desc: "Realiza Login no registry da company"
+    cmds:
+      - echo "Acesse e siga as instruções https://docs.microsoft.com/pt-br/azure/container-registry/container-registry-authentication?tabs=azure-powershell"
+      - echo "1. Execute o seguinte comnado para logar" 
+      - echo "az login"
+      - echo "2. Execute seguinte comando para selecionar o seu ACR"
+      - echo "az acr login --name {{.DOCKER_REGISTRY}}"
+      - echo "3. Obtenha o seu token com o seguinte comando"
+      - echo "az acr login --name {{.DOCKER_REGISTRY}} --expose-token --output tsv --query accessToken"
+      - echo "4. Execute o comando abaixo para logar o seu Docker e forneça o token obtido no passo acima"
+      - echo "docker login {{.DOCKER_REGISTRY}} --username 00000000-0000-0000-0000-000000000000 --password [TOKEN_DO_PASSO_ACIMA]"
+    silent: true
+
+  doc:
+    cmds:
+      - >
+        docker run \
+          --user="{{.DOCKER_USER}}:{{.DOCKER_GROUP}}" \
+          --rm \
+          -p 8000:8000 \
+          -v $(pwd):/content \
+          --workdir=/content \
+          company.azurecr.io/corporative/tools/mkdocs serve -a 0.0.0.0:8000

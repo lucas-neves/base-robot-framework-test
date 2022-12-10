@@ -1,0 +1,33 @@
+#+----------------------------------------------------------+
+#|               Evite alterar este arquivo                 |
+#|              Só altere se for recomendado                |
+#| Alterações erradas podem impactar a entrega da aplicação |
+#+----------------------------------------------------------+
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: "base-robot-mobile-automation-test"
+  description: "Projeto base para construção de testes automatizados mobile com robot"
+  tags:
+    - library
+    - typescript
+    - devops-company
+    - tribe-loan    
+  annotations:
+    # Backstage default annotations  
+    backstage.io/techdocs-ref: dir:.
+    sonarqube.org/project-key: "devops-company-e5cf2e09-d18e-47a2-9337-66dda77ae13e-ea3e479e-762d-46c6-a321-e9e580a9bed8"
+    backstage.io/code-coverage: scm-only
+    
+    # Custom Annotations
+    company.io/risk-score: "1"
+    company.io/jira-company-label: "COMPANY FINANCEIRA"
+    company.io/jira-tribe-label: "EMPRESTIMOS"
+    company.io/jira-squad-label: "SQUAD CREDITO PESSOAL"        
+
+spec:
+  type: library
+  lifecycle: experimental
+  owner: "squad-credito-pessoal-47162"
+  system: "undefined-system"
+  

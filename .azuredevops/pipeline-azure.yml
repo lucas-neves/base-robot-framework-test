@@ -1,0 +1,35 @@
+variables:
+
+- name: archetype
+  value: libraries/artifact
+
+- name: includeArtifacts
+  value: "npm" #Valores possíveis: npm,pip,nuget,maven
+  
+trigger:
+  batch: true
+  branches:
+    include:
+    - develop
+    - release
+    - master
+  paths:
+    include:
+    - '*'
+    exclude:
+    - .azuredevops/*
+    - docs/*
+    - catalog-info.yaml
+    - mkdocs.yml
+    - Taskfile.yml
+
+resources:
+  repositories:
+  - repository: Pipelines
+    name: Hefesto/Hefesto.Core.Pipelines
+    type: git
+    ref: refs/tags/v2-latest
+    endpoint: HefestoPipelines
+
+stages:
+- template: /archetypes/${{variables.archetype}}.yml@Pipelines

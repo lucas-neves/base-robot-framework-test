@@ -1,0 +1,59 @@
+{
+    "count": 1,
+    "value": [
+        {
+            "id": "5e74bc22-d526-434b-bae0-1a986b289086",
+            "normalizedName": "@company/library-test",
+            "name": "@company/library-test",
+            "protocolType": "Npm",
+            "url": "https://feeds.dev.azure.com/DEVOPS-COMPANY/_apis/Packaging/Feeds/cd077208-8fad-4c63-91ee-99c7e3679c80/Packages/5e74bc22-d526-434b-bae0-1a986b289086",
+            "versions": [
+                {
+                    "id": "2b496e06-21f5-4da8-8cff-6889dbc3636d",
+                    "normalizedVersion": "0.0.2",
+                    "version": "0.0.2",
+                    "isLatest": true,
+                    "isListed": true,
+                    "storageId": "D1A2EDE482361B39B7EC7DBD2EAD02C87B437254D1234CBA10329D91163A731200",
+                    "views": [
+                        {
+                            "id": "93bd97ea-8561-4db8-80d7-7b9bec1b34f5",
+                            "name": "Local",
+                            "url": null,
+                            "type": "implicit"
+                        }
+                    ],
+                    "publishDate": "2021-09-16T14:56:59.5600274Z"
+                },
+                {
+                    "id": "402bffbf-57d8-41bc-8e3d-aff34686a401",
+                    "normalizedVersion": "0.0.1",
+                    "version": "0.0.1",
+                    "isLatest": false,
+                    "isListed": true,
+                    "storageId": "AC6CA24AC03C5B69E4E6FD967A84D3C11B11D005FA042EC3077C41F317052E7400",
+                    "views": [
+                        {
+                            "id": "93bd97ea-8561-4db8-80d7-7b9bec1b34f5",
+                            "name": "Local",
+                            "url": null,
+                            "type": "implicit"
+                        }
+                    ],
+                    "publishDate": "2021-09-15T14:56:47.8815529Z"
+                }
+            ],
+            "_links": {
+                "self": {
+                    "href": "https://feeds.dev.azure.com/DEVOPS-COMPANY/_apis/Packaging/Feeds/cd077208-8fad-4c63-91ee-99c7e3679c80/Packages/5e74bc22-d526-434b-bae0-1a986b289086"
+                },
+                "feed": {
+                    "href": "https://feeds.dev.azure.com/DEVOPS-COMPANY/_apis/Packaging/Feeds/cd077208-8fad-4c63-91ee-99c7e3679c80"
+                },
+                "versions": {
+                    "href": "https://feeds.dev.azure.com/DEVOPS-COMPANY/_apis/Packaging/Feeds/cd077208-8fad-4c63-91ee-99c7e3679c80/Packages/5e74bc22-d526-434b-bae0-1a986b289086/Versions"
+                }
+            }
+        }
+    ]
+}

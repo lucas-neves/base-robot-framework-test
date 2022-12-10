@@ -1,0 +1,38 @@
+site_name: base-robot-mobile-automation-test
+repo_url: https://dev.azure.com/DEVOPS-COMPANY/tribe-loan/_git/base-robot-mobile-automation-test
+repo_name: Repository
+site_description: Projeto base para construção de testes automatizados mobile com robot
+theme: readthedocs
+
+nav:
+  - Home: 'index.md'
+
+markdown_extensions:
+  - toc:
+      baselevel: 2
+  - plantuml_markdown
+  - abbr
+  - attr_list
+  - pymdownx.snippets
+  - pymdownx.tabbed
+  - markdown_inline_graphviz
+  - admonition
+  - pymdownx.details
+  - pymdownx.keys
+  - pymdownx.highlight:
+      linenums: true
+      linenums_style: pymdownx.inline
+      use_pygments: true
+
+  - pymdownx.superfences
+        
+plugins:
+  - techdocs-core
+  - search
+  - diagrams:
+      file_extension: ".diagrams.py"
+      max_workers: 5
+
+extra_javascript:
+  - https://unpkg.com/mermaid@7.1.2/dist/mermaid.min.js
+
